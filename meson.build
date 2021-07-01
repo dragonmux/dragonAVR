@@ -14,5 +14,5 @@ endif
 
 dragonAVR_dep = declare_dependency(
 	compile_args: '-D@0@'.format(targetChip.to_upper()),
-	include_directories: include_directories('include/c++')
+	include_directories: include_directories('include/c++', 'include/platform')
 )
