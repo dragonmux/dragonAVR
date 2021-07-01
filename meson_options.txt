@@ -1,0 +1,2 @@
+option('chip', type: 'combo', description: 'Which AVR you wish you use', yield: true,
+	choices: ['unknown', 'atxmega256a3u'])

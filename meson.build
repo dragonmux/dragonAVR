@@ -7,12 +7,12 @@ project(
 	meson_version: '>= 0.53'
 )
 
-#targetChip = get_option('chip')
-#if targetChip == 'unknown'
-#	error('You must set the target AVR to use')
-#endif
+targetChip = get_option('chip')
+if targetChip == 'unknown'
+	error('You must set the target AVR to use')
+endif
 
 dragonAVR_dep = declare_dependency(
-	#compile_args: '-D@0@'.format(targetChip.to_upper()),
+	compile_args: '-D@0@'.format(targetChip.to_upper()),
 	include_directories: include_directories('include/c++')
 )
