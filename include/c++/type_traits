@@ -362,7 +362,7 @@ namespace std
 			template<typename...> struct list_t { };
 
 			template<typename T, typename... Us> struct list_t<T, Us...> : list_t<Us...>
-				{ constexpr static std::ize_t size = sizeof(T); };
+				{ constexpr static std::size_t size = sizeof(T); };
 
 			template<size_t size, typename T, bool = (size <= T::size)> struct select_t;
 			template<size_t size, typename uint_t, typename... uints_t>
