@@ -340,15 +340,15 @@ namespace std
 	// impl for make_unsigned
 	namespace impl
 	{
-		template<typename T> struct make_unsigned { using type = T; }
-		template<> struct make_unsigned<char> { using type = unsigned char; }
-		template<> struct make_unsigned<signed char> { using type = unsigned char; }
-		template<> struct make_unsigned<signed short> { using type = unsigned short; }
-		template<> struct make_unsigned<signed int> { using type = unsigned int; }
-		template<> struct make_unsigned<signed long> { using type = unsigned long; }
-		template<> struct make_unsigned<signed long long> { using type = unsigned long long; }
+		template<typename T> struct make_unsigned { using type = T; };
+		template<> struct make_unsigned<char> { using type = unsigned char; };
+		template<> struct make_unsigned<signed char> { using type = unsigned char; };
+		template<> struct make_unsigned<signed short> { using type = unsigned short; };
+		template<> struct make_unsigned<signed int> { using type = unsigned int; };
+		template<> struct make_unsigned<signed long> { using type = unsigned long; };
+		template<> struct make_unsigned<signed long long> { using type = unsigned long long; };
 
-		template<typename T, bool isInt = is_integral_v<T>, isEnum = is_enum_v<T>> struct make_unsigned_selector;
+		template<typename T, bool isInt = is_integral_v<T>, bool isEnum = is_enum_v<T>> struct make_unsigned_selector;
 
 		template<typename T> struct make_unsigned_selector<T, true, false>
 		{
@@ -381,13 +381,13 @@ namespace std
 		};
 
 		template<> struct make_unsigned<wchar_t>
-			{ using type = typename make_unsigned_selector<wchar_t, false, true>::type; }
+			{ using type = typename make_unsigned_selector<wchar_t, false, true>::type; };
 
 		template<> struct make_unsigned<char16_t>
-			{ using type = typename make_unsigned_selector<char16_t, false, true>::type; }
+			{ using type = typename make_unsigned_selector<char16_t, false, true>::type; };
 
 		template<> struct make_unsigned<char32_t>
-			{ using type = typename make_unsigned_selector<char32_t, false, true>::type; }
+			{ using type = typename make_unsigned_selector<char32_t, false, true>::type; };
 	} // namespace impl
 
 	template<typename T> struct make_unsigned
@@ -399,15 +399,15 @@ namespace std
 	// impl for make_signed
 	namespace impl
 	{
-		template<typename T> struct make_signed { using type = T; }
-		template<> struct make_signed<char> { using type = signed char; }
-		template<> struct make_signed<unsigned char> { using type = signed char; }
-		template<> struct make_signed<unsigned short> { using type = signed short; }
-		template<> struct make_signed<unsigned int> { using type = signed int; }
-		template<> struct make_signed<unsigned long> { using type = signed long; }
-		template<> struct make_signed<unsigned long long> { using type = signed long long; }
+		template<typename T> struct make_signed { using type = T; };
+		template<> struct make_signed<char> { using type = signed char; };
+		template<> struct make_signed<unsigned char> { using type = signed char; };
+		template<> struct make_signed<unsigned short> { using type = signed short; };
+		template<> struct make_signed<unsigned int> { using type = signed int; };
+		template<> struct make_signed<unsigned long> { using type = signed long; };
+		template<> struct make_signed<unsigned long long> { using type = signed long long; };
 
-		template<typename T, bool isInt = is_integral_v<T>, isEnum = is_enum_v<T>> struct make_signed_selector;
+		template<typename T, bool isInt = is_integral_v<T>, bool isEnum = is_enum_v<T>> struct make_signed_selector;
 		template<typename T> struct make_signed_selector<T, true, false>
 		{
 			using signed_type = typename make_signed<std::remove_cv_t<T>>::type;
@@ -421,13 +421,13 @@ namespace std
 		};
 
 		template<> struct make_signed<wchar_t>
-			{ using type = typename make_signed_selector<wchar_t, false, true>::type; }
+			{ using type = typename make_signed_selector<wchar_t, false, true>::type; };
 
 		template<> struct make_signed<char16_t>
-			{ using type = typename make_signed_selector<char16_t, false, true>::type; }
+			{ using type = typename make_signed_selector<char16_t, false, true>::type; };
 
 		template<> struct make_signed<char32_t>
-			{ using type = typename make_signed_selector<char32_t, false, true>::type; }
+			{ using type = typename make_signed_selector<char32_t, false, true>::type; };
 	} // namespace impl
 
 	template<typename T> struct make_signed
