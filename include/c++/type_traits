@@ -346,6 +346,23 @@ namespace std
 
 	template<typename T> struct is_signed : impl::is_signed<T>::type { };
 
+	// impl for match_cv_qualifiers
+	namespace impl
+	{
+		template<typename, bool isConst, bool isVolat> struct cv_selector;
+		template<typename unqal_t> struct cv_selector<unqal_t, false, false> { using type = unqal_t; };
+		template<typename unqal_t> struct cv_selector<unqal_t, true, false> { using type = const unqal_t; };
+		template<typename unqal_t> struct cv_selector<unqal_t, false, true> { using type = volatile unqal_t; };
+		template<typename unqal_t> struct cv_selector<unqal_t, true, true> { using type = const volatile unqal_t; };
+
+		template<typename qual_t, typename unqual_t, bool isConst = std::is_const_v<qual_t>,
+			bool isVolat = std::is_volatile_v<qual_t>> struct match_cv_qualifiers
+		{
+			using match_t = cv_selector<unqual_t, isConst, isVolat>;
+			using type = typename match_t::type;
+		};
+	} // namespace impl
+
 	// impl for make_unsigned
 	namespace impl
 	{
