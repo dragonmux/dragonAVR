@@ -230,6 +230,16 @@ namespace std
 	template<typename T> struct is_array<T[]> : public true_type { };
 	template<typename T> inline constexpr bool is_array_v = is_array<T>::value;
 
+	// impl of is_pointer
+	namespace impl
+	{
+		template<typename> struct is_pointer : public false_type { };
+		template<typename T> struct is_pointer<T *> : public true_type { };
+	} // namespace impl
+
+	template<typename T> struct is_pointer : public impl::is_pointer<remove_cv_t<T>> { };
+	template<typename T> inline constexpr bool is_pointer_v = is_pointer<T>::value;
+
 	template<typename...> using void_t = void;
 
 	// impl of is_referenceable and is_convertible
