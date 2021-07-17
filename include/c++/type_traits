@@ -471,7 +471,7 @@ namespace std
 
 		template<typename T> struct make_signed_selector<T, false, true>
 		{
-			using unsigned_type = typename make_unsigned_selector<T>::type;
+			using unsigned_type = typename make_unsigned_selector<T, false, true>::type;
 			using type = typename make_signed_selector<unsigned_type>::type;
 		};
 
