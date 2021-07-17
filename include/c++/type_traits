@@ -197,6 +197,28 @@ namespace std
 		is_lvalue_reference_v<T> || is_rvalue_reference_v<T>> { };
 	template<typename T> inline constexpr bool is_reference_v = is_reference<T>::value;
 
+	template<typename T> struct is_arithmetic : public _bool_constant<
+		is_integral_v<T> || is_floating_point_v<T>> { };
+	template<typename T> inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
+
+	template<typename T> struct is_fundamental : public _bool_constant<
+		is_arithmetic_v<T> || is_void_v<T> || is_null_pointer_v<T>> { };
+	template<typename T> inline constexpr bool is_fundamental_v = is_fundamental<T>::value;
+
+	// impl for is_member_pointer
+	namespace impl
+	{
+		template<typename T> struct is_member_pointer : public false_type { };
+		template<typename T, typename C> struct is_member_pointer<T C::*> : public true_type { };
+	} // namespace impl
+
+	template<typename T> struct is_member_pointer : public impl::is_member_pointer<remove_cv_t<T>> { };
+	template<typename T> inline constexpr bool is_member_pointer_v = is_member_pointer<T>::value;
+
+	template<typename T> struct is_scalar : public _bool_constant<
+		is_arithmetic_v<T> || is_enum_v<T> || is_pointer_v<T> || is_member_pointer_v<T> || is_null_pointer_v<T>> { };
+	template<typename T> inline constexpr bool is_scalar_v = is_scalar<T>::value;
+
 	template<typename> struct is_function : public false_type { };
 	template<typename res_t, typename... args_t, bool ne>
 		struct is_function<res_t(args_t...) noexcept(ne)> : public true_type { };
