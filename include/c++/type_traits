@@ -337,6 +337,105 @@ namespace std
 
 	template<typename T> struct is_signed : impl::is_signed<T>::type { };
 
+	// impl for make_unsigned
+	namespace impl
+	{
+		template<typename T> struct make_unsigned { using type = T; }
+		template<> struct make_unsigned<char> { using type = unsigned char; }
+		template<> struct make_unsigned<signed char> { using type = unsigned char; }
+		template<> struct make_unsigned<signed short> { using type = unsigned short; }
+		template<> struct make_unsigned<signed int> { using type = unsigned int; }
+		template<> struct make_unsigned<signed long> { using type = unsigned long; }
+		template<> struct make_unsigned<signed long long> { using type = unsigned long long; }
+
+		template<typename T, bool isInt = is_integral_v<T>, isEnum = is_enum_v<T>> struct make_unsigned_selector;
+
+		template<typename T> struct make_unsigned_selector<T, true, false>
+		{
+			using unsigned_type = typename make_unsigned<std::remove_cv_t<T>>::type;
+			using type = typename match_cv_qualifiers<T, unsigned_type>::type;
+		};
+
+		struct make_smallest_unsigned
+		{
+		protected:
+			template<typename...> struct list_t { };
+
+			template<typename T, typename... Us> struct list_t<T, Us...> : list_t<Us...>
+				{ constexpr static std::ize_t size = sizeof(T); };
+
+			template<size_t size, typename T, bool = (size <= T::size)> struct select_t;
+			template<size_t size, typename uint_t, typename... uints_t>
+				struct select_t<size, list_t<uint_t, uints_t...>, true>
+					{ using type = uint_t; };
+			template<size_t size, typename uint_t, typename... uints_t>
+				struct select_t<size, list_t<uint_t, uints_t...>, false> :
+					select_t<size, list_t<uints_t...>> { };
+		};
+
+		template<typename T> struct make_unsigned_selector<T, false, true> : make_smallest_unsigned
+		{
+			using uints_t = list_t<unsigned char, unsigned short, unsigned int, unsigned long, unsigned long long>;
+			using unsigned_type = typename select_t<sizeof(T), uints_t>::type;
+			using type = typename match_cv_qualifiers<T, unsigned_type>::type;
+		};
+
+		template<> struct make_unsigned<wchar_t>
+			{ using type = typename make_unsigned_selector<wchar_t, false, true>::type; }
+
+		template<> struct make_unsigned<char16_t>
+			{ using type = typename make_unsigned_selector<char16_t, false, true>::type; }
+
+		template<> struct make_unsigned<char32_t>
+			{ using type = typename make_unsigned_selector<char32_t, false, true>::type; }
+	} // namespace impl
+
+	template<typename T> struct make_unsigned
+		{ using type = typename impl::make_unsigned_selector<T>::type; };
+	template<> struct make_unsigned<bool>;
+
+	template<typename T> using make_unsigned_t = typename make_unsigned<T>::type;
+
+	// impl for make_signed
+	namespace impl
+	{
+		template<typename T> struct make_signed { using type = T; }
+		template<> struct make_signed<char> { using type = signed char; }
+		template<> struct make_signed<unsigned char> { using type = signed char; }
+		template<> struct make_signed<unsigned short> { using type = signed short; }
+		template<> struct make_signed<unsigned int> { using type = signed int; }
+		template<> struct make_signed<unsigned long> { using type = signed long; }
+		template<> struct make_signed<unsigned long long> { using type = signed long long; }
+
+		template<typename T, bool isInt = is_integral_v<T>, isEnum = is_enum_v<T>> struct make_signed_selector;
+		template<typename T> struct make_signed_selector<T, true, false>
+		{
+			using signed_type = typename make_signed<std::remove_cv_t<T>>::type;
+			using type = typename match_cv_qualifiers<T, signed_type>::type;
+		};
+
+		template<typename T> struct make_signed_selector<T, false, true>
+		{
+			using unsigned_type = typename make_unsigned_selector<T>::type;
+			using type = typename make_signed_selector<unsigned_type>::type;
+		};
+
+		template<> struct make_signed<wchar_t>
+			{ using type = typename make_signed_selector<wchar_t, false, true>::type; }
+
+		template<> struct make_signed<char16_t>
+			{ using type = typename make_signed_selector<char16_t, false, true>::type; }
+
+		template<> struct make_signed<char32_t>
+			{ using type = typename make_signed_selector<char32_t, false, true>::type; }
+	} // namespace impl
+
+	template<typename T> struct make_signed
+		{ using type = typename impl::make_signed_selector<T>::type; };
+	template<> struct make_signed<bool>;
+
+	template<typename T> using make_signed_t = typename make_signed<T>::type;
+
 	namespace impl
 	{
 		template<typename T> struct is_array_known_bounds :
