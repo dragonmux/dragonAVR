@@ -212,6 +212,8 @@ namespace std
 	template<typename T> struct is_array<T[]> : public true_type { };
 	template<typename T> inline constexpr bool is_array_v = is_array<T>::value;
 
+	template<typename...> using void_t = void;
+
 	// impl of is_referenceable and is_convertible
 	namespace impl
 	{
