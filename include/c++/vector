@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: BSD-3-Clause
+#ifndef VECTOR
+#define VECTOR
+
+template<typename> struct vector;
+
+#endif /*VECTOR*/
