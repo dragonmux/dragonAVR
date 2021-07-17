@@ -29,6 +29,23 @@ namespace std
 		{ using type = add_volatile_t<tuple_element_t<i, T>>; };
 	template<std::size_t i, typename T> struct tuple_element<i, const volatile T>
 		{ using type = add_cv_t<tuple_element_t<i, T>>; };
+
+	template<typename T, T... idxs> struct integer_sequence
+	{
+		using value_type = T;
+		constexpr static size_t size() noexcept { return sizeof...(idxs); }
+	};
+
+	template<typename T, T num> using make_integer_sequence =
+#if __has_builtin(__make_integer_seq)
+		_make_integer_seq<integer_sequence, T, num>;
+#else
+		integer_sequence<T, __integer_pack(num)...>;
+#endif
+
+	template<size_t... idxs> using index_sequence = integer_sequence<size_t, idxs...>;
+	template<size_t num> using make_index_sequence = make_integer_sequence<size_t, num>;
+	template<typename... types_t> using index_sequence_for = make_index_sequence<sizeof...(types_t)>;
 } // namespace std
 
 #endif /*UTILITY*/
