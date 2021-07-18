@@ -76,7 +76,7 @@ namespace std
 
 			void reset(pointer p) noexcept
 			{
-				const auto oldPtr{_ptr());
+				const auto oldPtr{_ptr()};
 				_ptr() = p;
 				if (oldPtr)
 					_deleter()(oldPtr);
@@ -96,7 +96,7 @@ namespace std
 				swap(_deleter(), other._deleter());
 			}
 		};
-	} // namespace
+	} // namespace impl
 
 	template<typename T, typename D = default_delete<T>> struct unique_ptr
 	{
