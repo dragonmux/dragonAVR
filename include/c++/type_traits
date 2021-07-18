@@ -6,6 +6,9 @@
 
 namespace std
 {
+	template<typename T> struct success_type { using type = T; };
+	struct failure_type { };
+
 	template<typename T, T v> struct integral_constant
 	{
 		using value_type = T;
@@ -821,6 +824,102 @@ namespace std
 			void operator =(const noneSuch_t &) = delete;
 		};
 	} // namespace impl
+
+	// impl of result_of/invoke_result
+	namespace impl
+	{
+		struct invoke_memfun_ref { };
+		struct invoke_memfun_deref { };
+		struct invoke_memobj_ref { };
+		struct invoke_memobj_deref { };
+		struct invoke_other { };
+
+		template<typename T, typename tag_t> struct result_of_success : success_type<T>
+			{ using invoke_type = tag_t; };
+
+		template<typename tag_t, typename memPtr_t, typename arg_t> struct result_of_memobj_
+		{
+			template<typename F, typename T> static result_of_success<
+				decltype((*std::declval<T>()).*std::declval<F>()), tag_t> test(int);
+			template<typename...> static failure_type test(...);
+
+			using type = decltype(test<memPtr_t, arg_t>(0));
+		};
+
+		template<typename tag_t, typename memPtr_t, typename arg_t, typename... args_t> struct result_of_memfun_
+		{
+			template<typename Fn, typename T, typename... args_t> static result_of_success<
+				decltype(((*std::declval<T>()).*std::declval<Fn>())(std::declval<args_t>()...)),
+				tag_t> test(int);
+			template<typename...> static failure_type test(...);
+
+			using type = decltype(test<memPtr_t, arg_t, args_t...>(0));
+		};
+
+		template<typename memPtr_t, typename arg_t> struct result_of_memobj;
+		template<typename result_t, typename class_t, typename arg_t>
+			struct result_of_memobj<result_t class_t::*, arg_t>
+		{
+			using argVal_t = remove_cvref_t<arg_t>;
+			using memPtr_t = result_t class_t::*;
+			using type = typename conditional_t<std::is_same_v<argVal_t, class_t> ||
+					std::is_base_of_v<class_t, argVal_t>,
+				result_of_memobj_<invoke_memobj_ref memPtr_t, arg_t>,
+				result_of_memobj_<invoke_memobj_deref, memPtr_t, arg_t>
+			>::type;
+		};
+
+		template<typename memPtr_t, typename arg_t, typename... args_t> struct result_of_memfun;
+		template<typename result_t, typename class_t, typename arg_t, typename... args_t>
+			struct result_of_memfun<result_t class_t::*, arg_t, args_t...>
+		{
+			using argVal_t = remove_reference_t<arg_t>;
+			using memPtr_t = result_t class_t::*;
+			using type = typename conditional_t<std::is_base_of_v<class_t, argVal_t>,
+				result_of_memfun_<invoke_memfun_ref, memPtr_t, arg_t, args_t...>,
+				result_of_memfun_<invoke_memfun_deref, memPtr_t, arg_t, args_t...>
+			>::type;
+		};
+
+		template<typename T, typename U = remove_cvref_t<T>> struct invoc_unwrap { using type = T; };
+		template<typename T, typename U> struct invoc_unwrap<T, reference_wrapper<U>> { using type = U &; };
+
+		template<bool, bool, typename functor_t, typename... argTypes_t> struct result_of
+			{ using type = std::failure_type; };
+		template<typename memPtr_t, typename arg_t>
+			struct result_of<true, false, memPtr_t, arg_t> :
+				public result_of_memobj<std::decay_t<memPtr_t>, invoc_unwrap<arg_t>::type> { };
+		template<typename memPtr_t, typename arg_t, typename... args_t>
+			struct result_of<false, true, memPtr_t, arg_t, args_t...> :
+				public result_of_memfun<std::decay_t<memPtr_t>, invoc_unwrap<arg_t>::type, args_t...> { };
+
+		template<typename functor_t, typename... argTypes_t>
+			struct result_of<false, false, functor_t, argTypes_t...>
+		{
+			template<typename fn_t, typename... args_t> static result_of_success<
+				decltype(std::declval<fn_t>()(std::declval<args_t>()...)), invoke_other> test(int);
+			template<typename...> static std::failure_type test(...);
+
+			using type = decltype(test<functor_t, argTypes_t...>(0));
+		};
+	} // namespace impl
+
+	template<typename functor_t, typename... argTypes_t> struct invoke_result : public
+		impl::result_of<is_member_object_pointer_v<remove_reference_t<functor_t>>,
+			is_member_function_pointer_v<remove_reference_t<functor_t>>, functor_t, argTypes_t...>::type
+	{
+		//static_assert(impl::is_complete_or_unbounded(impl::type_identity<functor_t>{}),
+		//	"functor_t must be a complete class or an unbounded array");
+		//static_assert((impl::is_complete_or_unbounded(impl::type_identity<argTypes_t>{}) && ...),
+		//	"each argument type must be a complete class or an unbounded array");
+	};
+
+	template<typename signature_t> struct result_of;
+	template<typename functor_t, typename... argsTypes_t> struct result_of<functor_t(argsTypes_t...)> :
+		public invoke_result<functor, argsTypes_t...> { };
+
+	template<typename T> using result_of_t = typename result_of<T>::type;
+	template<typename fn_t, typename... args_t> using invoke_result_t = typename invoke_result<fn_t, args_t...>::type;
 } // namespace std
 
 #endif /*TYPE_TRAITS*/
