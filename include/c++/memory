@@ -137,8 +137,7 @@ namespace std
 
 		~unique_ptr() noexcept
 		{
-			static_assert(__is_invocable<D &, pointer>::value,
-				"unique_ptr's deleter must be invocable with a pointer");
+			static_assert(is_invocable_v<D &, pointer>, "unique_ptr's deleter must be invocable with a pointer");
 			auto &p{ptr._ptr()};
 			if (p != nullptr)
 				get_deleter()(std::move(p));
@@ -170,8 +169,7 @@ namespace std
 
 		void reset(pointer p = pointer{}) noexcept
 		{
-			static_assert(__is_invocable<D &, pointer>::value,
-				"unique_ptr's deleter must be invocable with a pointer");
+			static_assert(is_invocable_v<D &, pointer>, "unique_ptr's deleter must be invocable with a pointer");
 			ptr.reset(std::move(p));
 		}
 
