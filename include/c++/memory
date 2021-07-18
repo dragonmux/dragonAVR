@@ -2,4 +2,186 @@
 #ifndef MEMORY
 #define MEMORY
 
+#include <type_traits>
+
+namespace std
+{
+	template<typename T> struct default_delete
+	{
+		constexpr default_delete() noexcept = default;
+		template<typename U, typename = enable_if_t<is_convertible_v<U *, T *>>>
+			default_delete(const default_delete<U> &) noexcept { }
+
+		void operator ()(T *ptr) const
+		{
+			static_assert(!is_void<T>::value, "Can't delete pointer to incomplete type");
+			static_assert(sizeof(T) > 0, "Can't delete pointer to incomplete type");
+			delete ptr;
+		}
+	};
+
+	template<typename T>
+		struct default_delete<T []>
+	{
+		constexpr default_delete() noexcept = default;
+		template<typename U, typename = enable_if_t<is_convertible_v<U (*)[], T (*)[]>>>
+			default_delete(const default_delete<U []> &) noexcept { }
+
+		void operator ()(T *ptr) const
+		{
+			static_assert(sizeof(T) > 0, "Can't delete pointer to incomplete type");
+			delete [] ptr;
+		}
+	};
+
+	// impl if unique_ptr
+	namespace impl
+	{
+		template<typename T, typename D> struct unique_ptr
+		{
+		private:
+			template<typename U, typename E, typename = void> struct ptr_t { using type = U *; };
+			template<typename U, typename E> struct ptr_t<U, E, std::void_t<
+				typename std::remove_reference_t<E>::pointer>>
+					{ using type = typename std::remove_reference_t<E>::pointer; };
+
+		public:
+			using deleterConstraint_t = std::enable_if<!is_pointer_v<D> && is_default_constructible_v<D>>;
+			using pointer = typename ptr_t<T, D>::type;
+
+			static_assert(!is_rvalue_reference_v<D>,
+				"unique_ptr's deleter type must be a function object type, or an lvalue reference type");
+
+		private:
+			std::tuple<pointer, D> ptr;
+
+		public:
+
+			unique_ptr() = default;
+			unique_ptr(pointer p) : ptr{} { _ptr() = p; }
+			template<typename del_t> unique_ptr(pointer p, del_t &&d) : ptr{p, std::forward<del_t>(d)} { }
+			unique_ptr(unique_ptr &&other) : ptr{std::move(other.ptr)} { other._ptr() = nullptr; }
+
+			unique_ptr &operator =(unique_ptr &&other) noexcept
+			{
+				reset(other.release());
+				_deleter() = std::forward<D>(other._deleter());
+				return *this;
+			}
+
+			pointer &_ptr() noexcept { return std::get<0>(ptr); }
+			pointer _ptr() const noexcept { return std::get<0>(ptr); }
+			D &_deleter() noexcept { return std::get<1>(ptr); }
+			const DS &_deleter() const noexcept { return std::get<1>(ptr); }
+
+			void reset(pointer p) noexcept
+			{
+				const auto oldPtr{_ptr());
+				_ptr() = p;
+				if (oldPtr)
+					_deleter()(oldPtr);
+			}
+
+			pointer release() noexcept
+			{
+				auto p{_ptr()};
+				_ptr() = nullptr;
+				return p;
+			}
+
+			void swap(unique_ptr &other) noexcept
+			{
+				using std::swap;
+				swap(_ptr(), other._ptr());
+				swap(_deleter(), other._deleter());
+			}
+		};
+	} // namespace
+
+	template<typename T, typename D = default_delete<T>> struct unique_ptr
+	{
+	private:
+		impl::unique_ptr<T, D> ptr;
+
+		template<typename U> using deleterConstraint_t = typename impl::unique_ptr<T, U>::deleterConstraint_t::type;
+		template<typename U, typename E> using safeConversionUp_t = __bool_constant<
+			is_convertible_v<typename unique_ptr<U, E>::pointer, pointer>, !is_array_v<U>>
+		>;
+
+	public:
+		using pointer = typename impl::unique_ptr<T, D>::pointer;
+		using element_type = T;
+		using deleter_type = D;
+
+		template<typename del_t = D, typename = deleterConstraint_t<del_t>>
+			constexpr unique_ptr() noexcept : ptr{} { }
+		template<typename del_t = D, typename = deleterConstraint_t<del_t>>
+			explicit unique_ptr(pointer p) noexcept : ptr{p} { }
+		template<typename del_t = D, typename = enable_if_t<is_copy_constructible_v<del_t>>
+			unique_ptr(pointer p, const D &d) noexcept : ptr{p, d} { }
+		template<typename del_t = D, typename = enable_if_t<is_move_constructible_v<del_t>>
+			unique_ptr(pointer p, enabel_if_t<!is_lvalue_reference_v<del_t>, del_t &&> d) noexcept :
+				ptr{p, std::move(d)} { }
+		template<typename del_t = D, typename delUnref_t = remove_reference_t<del_t>>
+			unique_ptr(pointer, enable_if_t<is_lvalue_reference_v<del_t>, delUnref_t &&>) = delete;
+		template<typename del_t = D, typename = deleterConstraint_t<del_t>>
+			constexpr unique_ptr(nullptr_t) noexcept : ptr{} { }
+		unique_ptr(unique_ptr &&) = default;
+
+		template<typename U, typename E, typename = enable_if_t<safeConversionUp_t<U, E>::value &&
+			conditional_t<is_reference_v<D>, is_same<E, D>, is_convertible<E, D>>::value>>
+				unique_ptr(unique_ptr<U, E> &&other) noexcept :
+					ptr{other.release(), std::forward<E>(other.get_deleter())} { }
+
+		~unique_ptr() noexcept
+		{
+			static_assert(__is_invocable<D &, pointer>::value,
+				"unique_ptr's deleter must be invocable with a pointer");
+			auto &p{ptr._ptr()};
+			if (p != nullptr)
+				get_deleter()(std::move(p));
+			p = pointer{};
+		}
+
+		unique_ptr &operator =(unique_ptr &&) = default;
+		template<typename U, typename E> enable_if_t<safeConversionUp_t<U, E>::value &&
+			is_assignable_v<D &, E&&>, unique_ptr &> operator =(unique_ptr<U, E> &&other) noexcept
+		{
+			reset(other.release());
+			get_deleter() = std::forward<E>(other.get_deleter());
+			return *this;
+		}
+
+		unique_ptr &operator =(nullptr_t) noexcept
+		{
+			reset();
+			return *this;
+		}
+
+		add_lvalue_reference_t<T> operator *() const { return *get(); }
+		pointer operator ->() const noexcept { return get(); }
+		pointer get() const noexcept { return ptr._ptr(); }
+		D &get_deleter() noexcept { return ptr._deleter(); }
+		const D &get_deleter() const noexcept { return ptr._deleter(); }
+		explicit operator bool() const noexcept { return !(get() == pointer{}); }
+		pointer release() noexcept { return ptr.release(); }
+
+		void reset(pointer p = pointer{}) noexcept
+		{
+			static_assert(__is_invocable<D &, pointer>::value,
+				"unique_ptr's deleter must be invocable with a pointer");
+			ptr.reset(std::move(p));
+		}
+
+		void swap(unique_ptr &other) noexcept
+		{
+			static_assert(__is_swappable<D>::value, "deleter must be swappable");
+			ptr.swap(other.ptr);
+		}
+
+		unique_ptr(const unique_ptr &) = delete;
+		unique_ptr &operator =(const unique_ptr &) = delete;
+	};
+} // namespace std
+
 #endif /*MEMORY*/
