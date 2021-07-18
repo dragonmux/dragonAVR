@@ -72,7 +72,7 @@ namespace std
 			pointer &_ptr() noexcept { return std::get<0>(ptr); }
 			pointer _ptr() const noexcept { return std::get<0>(ptr); }
 			D &_deleter() noexcept { return std::get<1>(ptr); }
-			const DS &_deleter() const noexcept { return std::get<1>(ptr); }
+			const D &_deleter() const noexcept { return std::get<1>(ptr); }
 
 			void reset(pointer p) noexcept
 			{
@@ -103,16 +103,18 @@ namespace std
 	private:
 		impl::unique_ptr<T, D> ptr;
 
+	public:
+		using pointer = typename impl::unique_ptr<T, D>::pointer;
+		using element_type = T;
+		using deleter_type = D;
+
+	private:
 		template<typename U> using deleterConstraint_t = typename impl::unique_ptr<T, U>::deleterConstraint_t::type;
 		template<typename U, typename E> using safeConversionUp_t = _bool_constant<
 			is_convertible_v<typename unique_ptr<U, E>::pointer, pointer>, !is_array_v<U>>
 		>;
 
 	public:
-		using pointer = typename impl::unique_ptr<T, D>::pointer;
-		using element_type = T;
-		using deleter_type = D;
-
 		template<typename del_t = D, typename = deleterConstraint_t<del_t>>
 			constexpr unique_ptr() noexcept : ptr{} { }
 		template<typename del_t = D, typename = deleterConstraint_t<del_t>>
