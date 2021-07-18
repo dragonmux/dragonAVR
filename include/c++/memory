@@ -111,7 +111,7 @@ namespace std
 	private:
 		template<typename U> using deleterConstraint_t = typename impl::unique_ptr<T, U>::deleterConstraint_t::type;
 		template<typename U, typename E> using safeConversionUp_t = _bool_constant<
-			is_convertible_v<typename unique_ptr<U, E>::pointer, pointer> && !is_array_v<U>>
+			is_convertible_v<typename unique_ptr<U, E>::pointer, pointer> && !is_array_v<U>
 		>;
 
 	public:
