@@ -478,7 +478,7 @@ namespace std
 			struct common_type<T, U, T, U>
 		{
 			template<typename _T, typename _U> using cond_t =
-				decltype(true ? std::declval<_T>{} : std::declval<_U>{});
+				decltype(true ? std::declval<_T>() : std::declval<_U>());
 
 			template<typename _T, typename _U> static
 				success_type<std::remove_cvref_t<cond_t<const _T &, const _U &>>> test2(int);
