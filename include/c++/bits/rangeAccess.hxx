@@ -3,6 +3,8 @@
 #define BITS_RANGE_ACCESS_HXX
 
 #include <cstddef>
+#include <initializer_list>
+#include <iterator>
 
 namespace std
 {
@@ -21,6 +23,12 @@ namespace std
 	template<typename T, size_t N> constexpr inline T *begin(T (&arr)[N]) { return arr; }
 	template<typename T, size_t N> constexpr inline T *end(T (&arr)[N]) { return arr + N; }
 
+	template<typename T> struct valarray;
+	template<typename T> T *begin(valarray<T> &);
+	template<typename T> const T *begin(const valarray<T> &);
+	template<typename T> T *end(valarray<T> &);
+	template<typename T> const T *end(const valarray<T> &);
+
 	template<typename container_t> constexpr inline auto cbegin(const container_t &cont)
 		noexcept(noexcept(std::begin(cont))) -> decltype(begin(cont)) { return begin(cont); }
 
@@ -38,6 +46,16 @@ namespace std
 
 	template<typename container_t>
 		constexpr inline auto rend(const container_t &cont) -> decltype(cont.rend()) { return cont.rend(); }
+
+	template<typename T, size_t N> constexpr inline reverse_iterator<T *> rbegin(T (&arr)[N])
+		{ return reverse_iterator<T *>{arr + N}; }
+	template<typename T, size_t N> constexpr inline reverse_iterator<T *> rend(T (&arr)[N])
+		{ return reverse_iterator<T *>{arr}; }
+
+	template<typename T, size_t N> constexpr inline reverse_iterator<T *> rbegin(initializer_list<T> list)
+		{ return reverse_iterator<const T *>{list.end()}; }
+	template<typename T, size_t N> constexpr inline reverse_iterator<T *> rend(initializer_list<T> list)
+		{ return reverse_iterator<const T *>{list.begin()}; }
 
 	template<typename container_t> constexpr inline auto crbegin(const container_t &cont)
 		noexcept(noexcept(std::rbegin(cont))) -> decltype(rbegin(cont)) { return rbegin(cont); }
@@ -60,6 +78,17 @@ namespace std
 		noexcept(noexcept(cont.data())) -> decltype(cont.data())  { return cont.data(); }
 
 	template<typename T, size_t N> constexpr T *data(T (&array)[N]) noexcept { return array; }
+
+	template<typename T> constexpr const T *data(initializer_list<T> list) noexcept { return list.begin(); }
+
+	template<typename container_t> constexpr auto ssize(const container_t &cont) noexcept(noexcept(cont.size()))
+		-> common_type_t<ptrdiff_t, make_signed_t<decltype(cont.size())>>
+	{
+		using type = make_signed_t<decltype(cont.size())>;
+		return static_cast<common_type_t<ptrdiff_t, type>>(cont.size());
+	}
+
+	template<typename T, ptrdiff_t N> constexpr ptrdiff_t ssize(const T (&)[N]) noexcept { return N; }
 } // namespace std
 
 #endif /*BITS_RANGE_ACCESS_HXX*/
