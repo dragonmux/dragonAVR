@@ -83,6 +83,10 @@ namespace std
 	template<typename T> struct is_same<T, T> : public true_type { };
 	template<typename T, typename U> constexpr inline bool is_same_v = is_same<T, U>::value;
 
+	template<typename base_t, typename derived_t> struct is_base_of :
+		public _bool_constant<__is_base_of(base_t, derived_t)> { };
+	template<typename T, typename U> constexpr inline bool is_base_of_v = is_base_of<T, U>::value;
+
 	// impl for is_swappable and is_nothrow_swapable
 	namespace impl
 	{
