@@ -119,9 +119,9 @@ namespace std
 			constexpr unique_ptr() noexcept : ptr{} { }
 		template<typename del_t = D, typename = deleterConstraint_t<del_t>>
 			explicit unique_ptr(pointer p) noexcept : ptr{p} { }
-		template<typename del_t = D, typename = enable_if_t<is_copy_constructible_v<del_t>>
+		template<typename del_t = D, typename = enable_if_t<is_copy_constructible_v<del_t>>>
 			unique_ptr(pointer p, const D &d) noexcept : ptr{p, d} { }
-		template<typename del_t = D, typename = enable_if_t<is_move_constructible_v<del_t>>
+		template<typename del_t = D, typename = enable_if_t<is_move_constructible_v<del_t>>>
 			unique_ptr(pointer p, enabel_if_t<!is_lvalue_reference_v<del_t>, del_t &&> d) noexcept :
 				ptr{p, std::move(d)} { }
 		template<typename del_t = D, typename delUnref_t = remove_reference_t<del_t>>
