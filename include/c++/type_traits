@@ -167,46 +167,6 @@ namespace std
 	template<typename T> using remove_extent_t = typename remove_extent<T>::type;
 	template<typename T> using remove_all_extents_t = typename remove_all_extents<T>::type;
 
-	template<typename... T> struct common_type;
-	template<> struct common_type<> { };
-	template<typename T> struct common_type<T> : public common_type<T, T> { };
-
-	// impl of common_type
-	namespace impl
-	{
-		template<typename T, typename U, typename D1 = std::decay_t<T>, typename D2 = std::decay_t<U>>
-			struct common_type { using type = std::common_type<D1, D2>; };
-
-		template<typename T, typename U>
-			struct common_type<T, U, T, U>
-		{
-			template<typename _T, typename _U> using cond_t =
-				decltype(true ? std::declval<_T>{} : std::declval<_U>{});
-
-			template<typename _T, typename _U> static
-				success_type<std::remove_cvref_t<cond_t<const _T &, const _U &>>> test2(int);
-			template<typename, typename> static failure_type test2(...);
-
-			template<typename _T, typename _U> static success_type<decay_t<cond_t<_T, _U>>> test(int);
-			template<typename _T, typename _U> static decltype(test2<_T, _U>(0)) test(...);
-			using type = decltype(test<T, U>(0));
-		};
-
-		template<typename...> struct common_type_pack { };
-
-		template<typename, typename, typename = void> struct common_type_fold;
-		template<typename CT, typename... Rs>
-			struct common_type_fold<CT, common_type_pack<Rs...>, void_t<typename CT::type>> :
-				public std::common_type<typename CT::type, Rs...> { };
-		template<typename CT, typename R> struct common_type_fold<CT, R, void> { };
-	} // namespace impl
-
-	template<typename T, typename U> struct common_type<T, U> : public impl::common_type<T, U>::type { };
-	template<typename T, typename U, typename... Rs> struct common_type<T, U, Rs...> :
-		public impl::common_type_fold<common_type<T, U>, impl::common_type_pack<Rs...>> { };
-
-	template<typename... Ts> using common_type_t = typename common_type<Ts...>::type;
-
 	// impl for is_integral
 	namespace impl
 	{
@@ -503,6 +463,46 @@ namespace std
 		template<typename T> struct decay_and_strip : strip_reference_wrapper<decay_t<T>> { };
 		template<typename T> using decay_and_strip_t = typename decay_and_strip<T>::type;
 	} // namespace impl
+
+	template<typename... T> struct common_type;
+	template<> struct common_type<> { };
+	template<typename T> struct common_type<T> : public common_type<T, T> { };
+
+	// impl of common_type
+	namespace impl
+	{
+		template<typename T, typename U, typename D1 = std::decay_t<T>, typename D2 = std::decay_t<U>>
+			struct common_type { using type = std::common_type<D1, D2>; };
+
+		template<typename T, typename U>
+			struct common_type<T, U, T, U>
+		{
+			template<typename _T, typename _U> using cond_t =
+				decltype(true ? std::declval<_T>{} : std::declval<_U>{});
+
+			template<typename _T, typename _U> static
+				success_type<std::remove_cvref_t<cond_t<const _T &, const _U &>>> test2(int);
+			template<typename, typename> static failure_type test2(...);
+
+			template<typename _T, typename _U> static success_type<decay_t<cond_t<_T, _U>>> test(int);
+			template<typename _T, typename _U> static decltype(test2<_T, _U>(0)) test(...);
+			using type = decltype(test<T, U>(0));
+		};
+
+		template<typename...> struct common_type_pack { };
+
+		template<typename, typename, typename = void> struct common_type_fold;
+		template<typename CT, typename... Rs>
+			struct common_type_fold<CT, common_type_pack<Rs...>, std::void_t<typename CT::type>> :
+				public std::common_type<typename CT::type, Rs...> { };
+		template<typename CT, typename R> struct common_type_fold<CT, R, void> { };
+	} // namespace impl
+
+	template<typename T, typename U> struct common_type<T, U> : public impl::common_type<T, U>::type { };
+	template<typename T, typename U, typename... Rs> struct common_type<T, U, Rs...> :
+		public impl::common_type_fold<common_type<T, U>, impl::common_type_pack<Rs...>> { };
+
+	template<typename... Ts> using common_type_t = typename common_type<Ts...>::type;
 
 	// impl for is_signed
 	namespace impl
