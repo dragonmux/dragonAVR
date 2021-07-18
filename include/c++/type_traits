@@ -892,10 +892,10 @@ namespace std
 			{ using type = std::failure_type; };
 		template<typename memPtr_t, typename arg_t>
 			struct result_of<true, false, memPtr_t, arg_t> :
-				public result_of_memobj<std::decay_t<memPtr_t>, invoc_unwrap<arg_t>::type> { };
+				public result_of_memobj<std::decay_t<memPtr_t>, typename invoc_unwrap<arg_t>::type> { };
 		template<typename memPtr_t, typename arg_t, typename... args_t>
 			struct result_of<false, true, memPtr_t, arg_t, args_t...> :
-				public result_of_memfun<std::decay_t<memPtr_t>, invoc_unwrap<arg_t>::type, args_t...> { };
+				public result_of_memfun<std::decay_t<memPtr_t>, typename invoc_unwrap<arg_t>::type, args_t...> { };
 
 		template<typename functor_t, typename... argTypes_t>
 			struct result_of<false, false, functor_t, argTypes_t...>
@@ -920,7 +920,7 @@ namespace std
 
 	template<typename signature_t> struct result_of;
 	template<typename functor_t, typename... argsTypes_t> struct result_of<functor_t(argsTypes_t...)> :
-		public invoke_result<functor, argsTypes_t...> { };
+		public invoke_result<functor_t, argsTypes_t...> { };
 
 	template<typename T> using result_of_t = typename result_of<T>::type;
 	template<typename fn_t, typename... args_t> using invoke_result_t = typename invoke_result<fn_t, args_t...>::type;
