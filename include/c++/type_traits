@@ -846,14 +846,14 @@ namespace std
 			using type = decltype(test<memPtr_t, arg_t>(0));
 		};
 
-		template<typename tag_t, typename memPtr_t, typename arg_t, typename... args_t> struct result_of_memfun_
+		template<typename tag_t, typename memPtr_t, typename arg_t, typename... argTypes_t> struct result_of_memfun_
 		{
 			template<typename Fn, typename T, typename... args_t> static result_of_success<
 				decltype(((*std::declval<T>()).*std::declval<Fn>())(std::declval<args_t>()...)),
 				tag_t> test(int);
 			template<typename...> static failure_type test(...);
 
-			using type = decltype(test<memPtr_t, arg_t, args_t...>(0));
+			using type = decltype(test<memPtr_t, arg_t, argTypes_t...>(0));
 		};
 
 		template<typename memPtr_t, typename arg_t> struct result_of_memobj;
