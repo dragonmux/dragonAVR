@@ -46,7 +46,7 @@ namespace std
 					{ using type = typename std::remove_reference_t<E>::pointer; };
 
 		public:
-			using deleterConstraint_t = std::enable_if<!is_pointer_v<D> && is_default_constructible_v<D>>;
+			using deleterConstraint_t = std::enable_if<!std::is_pointer_v<D> && std::is_default_constructible_v<D>>;
 			using pointer = typename ptr_t<T, D>::type;
 
 			static_assert(!is_rvalue_reference_v<D>,
@@ -104,7 +104,7 @@ namespace std
 		impl::unique_ptr<T, D> ptr;
 
 		template<typename U> using deleterConstraint_t = typename impl::unique_ptr<T, U>::deleterConstraint_t::type;
-		template<typename U, typename E> using safeConversionUp_t = __bool_constant<
+		template<typename U, typename E> using safeConversionUp_t = _bool_constant<
 			is_convertible_v<typename unique_ptr<U, E>::pointer, pointer>, !is_array_v<U>>
 		>;
 
