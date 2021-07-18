@@ -175,7 +175,7 @@ namespace std
 
 		void swap(unique_ptr &other) noexcept
 		{
-			static_assert(__is_swappable<D>::value, "deleter must be swappable");
+			static_assert(is_swappable_v<D>, "deleter must be swappable");
 			ptr.swap(other.ptr);
 		}
 
