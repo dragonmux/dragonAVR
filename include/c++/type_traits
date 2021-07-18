@@ -868,7 +868,7 @@ namespace std
 			using memPtr_t = result_t class_t::*;
 			using type = typename conditional_t<std::is_same_v<argVal_t, class_t> ||
 					std::is_base_of_v<class_t, argVal_t>,
-				result_of_memobj_<invoke_memobj_ref memPtr_t, arg_t>,
+				result_of_memobj_<invoke_memobj_ref, memPtr_t, arg_t>,
 				result_of_memobj_<invoke_memobj_deref, memPtr_t, arg_t>
 			>::type;
 		};
