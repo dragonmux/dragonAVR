@@ -3,6 +3,7 @@
 #define MEMORY
 
 #include <type_traits>
+#include <tuple>
 
 namespace std
 {
