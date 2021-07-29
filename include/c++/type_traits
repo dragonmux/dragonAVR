@@ -741,9 +741,12 @@ namespace std
 		template<typename T, typename... args_t> using is_nothrow_constructible_t =
 			typename is_nothrow_constructible<__is_constructible(T, args_t...), T, args_t...>::type;
 
-		template<typename T, bool = is_referenceable<T>::value>
-			struct is_nothrow_move_constructible;
+		template<typename T, bool = is_referenceable<T>::value> struct is_nothrow_copy_constructible;
+		template<typename T> struct is_nothrow_copy_constructible<T, false> : public false_type { };
+		template<typename T> struct is_nothrow_copy_constructible<T, true> :
+			public is_nothrow_constructible_t<T, const T &> { };
 
+		template<typename T, bool = is_referenceable<T>::value> struct is_nothrow_move_constructible;
 		template<typename T> struct is_nothrow_move_constructible<T, false> : public false_type { };
 		template<typename T> struct is_nothrow_move_constructible<T, true> :
 			public is_nothrow_constructible_t<T, T &&> { };
@@ -780,13 +783,34 @@ namespace std
 		//	"template argument must be a complete class or an unbounded array");
 	};
 
+	template<typename T, typename... args_t> struct is_nothrow_constructible :
+		public impl::is_nothrow_constructible_t<T, args_t...>
+	{
+		//static_assert(impl::is_complete_or_unbounded(impl::type_identity<T>{}),
+		//	"template argument must be a complete class or an unbounded array");
+	};
+
 	template<typename T> struct is_nothrow_default_constructible :
 		public _bool_constant<is_default_constructible_v<T> &&
-		impl::is_nothrow_default_constructible<T>::value> { };
-	template<typename T, typename... args_t> struct is_nothrow_constructible :
-		public impl::is_nothrow_constructible_t<T, args_t...> { };
+		impl::is_nothrow_default_constructible<T>::value>
+	{
+		//static_assert(impl::is_complete_or_unbounded(impl::type_identity<T>{}),
+		//	"template argument must be a complete class or an unbounded array");
+	};
+
+	template<typename T> struct is_nothrow_copy_constructible :
+		public impl::is_nothrow_copy_constructible<T>
+	{
+		//static_assert(impl::is_complete_or_unbounded(impl::type_identity<T>{}),
+		//	"template argument must be a complete class or an unbounded array");
+	};
+
 	template<typename T> struct is_nothrow_move_constructible :
-		public impl::is_nothrow_move_constructible<T> { };
+		public impl::is_nothrow_move_constructible<T>
+	{
+		//static_assert(impl::is_complete_or_unbounded(impl::type_identity<T>{}),
+		//	"template argument must be a complete class or an unbounded array");
+	};
 
 	template<typename T, typename U> struct is_assignable :
 		public _bool_constant<__is_assignable(T, U)>
