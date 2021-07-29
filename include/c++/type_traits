@@ -278,6 +278,9 @@ namespace std
 		is_arithmetic_v<T> || is_void_v<T> || is_null_pointer_v<T>> { };
 	template<typename T> inline constexpr bool is_fundamental_v = is_fundamental<T>::value;
 
+	template<typename T> struct is_compound : public _bool_constant<!is_fundamental_v<T>> { };
+	template<typename T> inline constexpr bool is_compound_v = is_compound<T>::value;
+
 	template<typename> struct is_function : public false_type { };
 	template<typename res_t, typename... args_t, bool ne>
 		struct is_function<res_t(args_t...) noexcept(ne)> : public true_type { };
