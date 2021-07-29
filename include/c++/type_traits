@@ -871,12 +871,12 @@ namespace std
 		template<typename T, bool = is_referenceable<T>::value> struct is_trivially_copy_constructible;
 		template<typename T> struct is_trivially_copy_constructible<T, false> : public false_type { };
 		template<typename T> struct is_trivially_copy_constructible<T, true> :
-			public _bool_constant<is_copy_constructible<T>::value __is_trivially_constructible(T, const T &)> { };
+			public _bool_constant<is_copy_constructible<T>::value && __is_trivially_constructible(T, const T &)> { };
 
 		template<typename T, bool = is_referenceable<T>::value> struct is_trivially_move_constructible;
 		template<typename T> struct is_trivially_move_constructible<T, false> : public false_type { };
 		template<typename T> struct is_trivially_move_constructible<T, true> :
-			public _bool_constant<is_move_constructible<T>::value __is_trivially_constructible(T, T &&)> { };
+			public _bool_constant<is_move_constructible<T>::value && __is_trivially_constructible(T, T &&)> { };
 	} // namespace impl
 
 	template<typename T> struct is_trivially_copy_constructible : public impl::is_trivially_copy_constructible<T>
