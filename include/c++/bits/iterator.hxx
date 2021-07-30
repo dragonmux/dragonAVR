@@ -65,6 +65,7 @@ namespace std
 		using reference = const T &;
 	};
 
+	// impl of normal_iterator
 	namespace impl
 	{
 		template<typename iterator_t, typename container_t> struct normal_iterator
@@ -125,6 +126,33 @@ namespace std
 			}
 		};
 	} // impl
+
+	// impl of distance
+	namespace impl
+	{
+		template<typename iter_t> constexpr inline typename iterator_traits<iter_t>::iterator_category
+			iterator_category(const iter_t &) { return typename iterator_traits<iter_t>::iterator_category{}; }
+
+		template<typename inputIter_t> constexpr inline typename iterator_traits<inputIter_t>::difference_type
+			distance(inputIter_t first, const inputIter_t last, std::input_iterator_tag)
+		{
+			typename iterator_traits<inputIter_t>::difference_type n{};
+			while (first != last)
+			{
+				++first;
+				++n;
+			}
+			return n;
+		}
+
+		template<typename randomAccessIter_t>
+			constexpr inline typename iterator_traits<randomAccessIter_t>::difference_type
+			distance(const randomAccessIter_t first, const randomAccessIter_t last, random_access_iterator_tag)
+				{ return last  - first; }
+	} // namespace impl
+
+	template<typename iter_t> constexpr inline typename iterator_traits<iter_t>::difference_type
+		distance(iter_t first, iter_t last) { return impl::distance(first, last, impl::iterator_category(first)); }
 } // namespace std
 
 #endif /*BITS_ITERATOR_HXX*/
