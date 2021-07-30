@@ -64,6 +64,67 @@ namespace std
 		using pointer = const T *;
 		using reference = const T &;
 	};
+
+	namespace impl
+	{
+		template<typename iterator_t, typename container_t> struct normal_iterator
+		{
+		protected:
+			iterator_t current;
+
+			using traits_t = std::iterator_traits<iterator_t>;
+
+		public:
+			using iterator_type = iterator_t;
+			using iterator_category = typename traits_t::iterator_category;
+			using value_type = typename traits_t::value_type;
+			using difference_type = typename traits_t::difference_type;
+			using reference = typename traits_t::reference;
+			using pointer = typename traits_t::pointer;
+
+			constexpr normal_iterator() noexcept : current{iterator_t{}} { }
+			explicit constexpr normal_iterator(const iterator_t &iter) noexcept : current{iter} { }
+
+			template<typename iter_t> constexpr normal_iterator(const normal_iterator<iter_t,
+				std::enable_if_t<std::is_same_v<iter_t, typename container_t::pointer>, container_t>> &iter) noexcept :
+					current{iter.base()} { }
+
+			constexpr reference operator *() const noexcept { return *current; }
+			constexpr pointer operator ->() const noexcept { return current; }
+			constexpr normal_iterator operator ++(int) noexcept { return normal_iterator{current++}; }
+			constexpr normal_iterator operator --(int) noexcept { return normal_iterator{current--}; }
+			constexpr reference operator [](const difference_type n) const noexcept { return current[n]; }
+			constexpr normal_iterator operator +(const difference_type n) const noexcept
+				{ return normal_iterator{current + n}; }
+			constexpr normal_iterator operator -(const difference_type n) const noexcept
+				{ return normal_iterator{current - n}; }
+			constexpr const iterator_t &base() const noexcept { return current; }
+
+			constexpr normal_iterator &operator ++() noexcept
+			{
+				++current;
+				return *this;
+			}
+
+			constexpr normal_iterator &operator --() noexcept
+			{
+				--current;
+				return *this;
+			}
+
+			constexpr normal_iterator &operator +=(const difference_type n) const noexcept
+			{
+				current += n;
+				return *this;
+			}
+
+			constexpr normal_iterator &operator -=(const difference_type n) const noexcept
+			{
+				current -= n;
+				return *this;
+			}
+		};
+	} // impl
 } // namespace std
 
 #endif /*BITS_ITERATOR_HXX*/
