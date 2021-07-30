@@ -1015,7 +1015,7 @@ namespace std
 	};
 
 	template<typename T> struct is_trivially_destructible :
-		public _bool_constant<impl::is_destructible_safe<T> && __has_trivial_destructor(T)>
+		public _bool_constant<impl::is_destructible_safe<T>::type::value && __has_trivial_destructor(T)>
 	{
 		//static_assert(impl::is_complete_or_unbounded(impl::type_identity<T>{}),
 		//	"template argument must be a complete class or an unbounded array");
