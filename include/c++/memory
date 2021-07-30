@@ -2,6 +2,7 @@
 #ifndef MEMORY
 #define MEMORY
 
+#include <new>
 #include <type_traits>
 #include <tuple>
 
