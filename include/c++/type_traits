@@ -1233,6 +1233,28 @@ namespace std
 
 	template<typename fn_t, typename... args_t> inline constexpr bool is_invocable_v =
 		is_invocable<fn_t, args_t...>::value;
+
+	namespace impl
+	{
+		template<typename default_t, typename, template<typename...> typename, typename...> struct detector_t
+		{
+			using value_t = false_type;
+			using type = default_t;
+		};
+
+		template<typename default_t, template<typename...> typename op_t, typename... args_t>
+			struct detector_t<default_t, std::void_t<op_t<args_t...>>, op_t, args_t...>
+		{
+			using value_t = true_type;
+			using type = op_t<args_t...>;
+		};
+
+		template<typename default_t, template<typename...> typename op_t, typename... args_t>
+			using detected_or = detector<default_t, void, op_t, args_t...>;
+
+		template<typename default_t, template<typename...> typename op_t, typename... args_t>
+			using detected_or_t = typename detected_or<default_t, op_t, args_t...>::type;
+	} // namespace impl
 } // namespace std
 
 #endif /*TYPE_TRAITS*/
