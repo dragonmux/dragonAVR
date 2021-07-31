@@ -1236,14 +1236,14 @@ namespace std
 
 	namespace impl
 	{
-		template<typename default_t, typename, template<typename...> typename, typename...> struct detector_t
+		template<typename default_t, typename, template<typename...> typename, typename...> struct detector
 		{
 			using value_t = false_type;
 			using type = default_t;
 		};
 
 		template<typename default_t, template<typename...> typename op_t, typename... args_t>
-			struct detector_t<default_t, std::void_t<op_t<args_t...>>, op_t, args_t...>
+			struct detector<default_t, std::void_t<op_t<args_t...>>, op_t, args_t...>
 		{
 			using value_t = true_type;
 			using type = op_t<args_t...>;
