@@ -34,6 +34,18 @@ namespace std
 		static_assert(!is_same_v<element_type, impl::undefined_t>,
 			"pointer type defines element_type or is like SomePointer<T, Args>");
 	};
+
+	namespace impl
+	{
+		template<typename T> constexpr T *to_address(T *ptr) noexcept
+		{
+			static_assert(!std::is_function_v<T>, "not a function pointer");
+			return ptr;
+		}
+
+		template<typename ptr_t> constexpr typename std::pointer_traits<ptr_t>::element_type *
+			to_address(const ptr_t &ptr) { return to_address(ptr.operator ->()); }
+	} // namespace impl
 } // namespace std
 
 #endif /*BITS_PTR_TRAITS_HXX*/
