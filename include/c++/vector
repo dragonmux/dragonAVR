@@ -4,6 +4,7 @@
 
 #include <bits/rangeAccess.hxx>
 #include <bits/algorithms.hxx>
+#include <bits/ptrTraits.hxx>
 #include <iterator>
 #include <initializer_list>
 
