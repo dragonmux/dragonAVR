@@ -130,8 +130,14 @@ namespace std
 	// impl of distance
 	namespace impl
 	{
-		template<typename iter_t> constexpr inline typename iterator_traits<iter_t>::iterator_category
-			iterator_category(const iter_t &) { return typename iterator_traits<iter_t>::iterator_category{}; }
+		template<typename iter_t> using iterator_category_t =
+			typename std::iterator_traits<iter_t>::iterator_category;
+
+		template<typename iter_t> constexpr inline iterator_category_t<iter_t>
+			iterator_category(const iter_t &) { return iterator_category_t<iter_t>{}; }
+
+		template<typename iter_t> using requireInputIter_t =
+			std::enable_if_t<std::is_convertible_v<iterator_category_t<iter_t>, input_iterator_tag>>;
 
 		template<typename inputIter_t> constexpr inline typename iterator_traits<inputIter_t>::difference_type
 			distance(inputIter_t first, const inputIter_t last, std::input_iterator_tag)
