@@ -2,9 +2,294 @@
 #ifndef VECTOR
 #define VECTOR
 
+#include <bits/rangeAccess.hxx>
+#include <bits/algorithms.hxx>
+#include <iterator>
+#include <initializer_list>
+
 namespace std
 {
-	template<typename> struct vector;
+	template<typename T> struct vector
+	{
+	public:
+		using value_type = T;
+		using pointer = T *;
+		using const_pointer = const T *;
+		using reference = T &;
+		using const_reference = const T &;
+		using iterator = impl::normal_iterator<pointer, vector>;
+		using const_iterator = impl::normal_iterator<const_pointer, vector>;
+		using reverse_iterator = std::reverse_iterator<iterator>;
+		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+		using size_type = size_t;
+		using difference_type = ptrdiff_t;
+
+	private:
+		struct storage_t final
+		{
+			pointer begin;
+			pointer end;
+			pointer storageEnd;
+
+			storage_t() noexcept : begin{}, end{}, storageEnd{} { }
+			storage_t(const size_t n) { createStorage(n); }
+			~storage_t() noexcept { deallocate(begin, storageEnd - begin); }
+
+			pointer allocate(const size_t n) { return n != 0 ? new T [n]{} : pointer{}; }
+			void deallocate(pointer ptr, const size_t) { if (ptr) delete [] ptr; }
+
+			void createStorage(const size_t n)
+			{
+				begin = allocate(n);
+				end = begin;
+				storageEnd = begin + n;
+			}
+		};
+
+		storage_t storage;
+
+	public:
+
+		vector() = default;
+		explicit vector(const size_t count) : storage{count} { _defaultInitialise(count); }
+		vector(const size_t count, const T &value) : storage{count} { _fillInitialise(count, value); }
+		vector(vector &&) noexcept = default;
+		~vector() noexcept = default;
+
+		vector(const vector &other) : storage{other.size()}
+			{ storage.end = std::copy(other.begin(), other.end(), storage.begin); }
+
+		vector(initializer_list<T> list) : storage{}
+			{ _rangeInitialise(list.begin(), list.end(), random_access_iterator_tag{}); }
+
+		template<typename inputIter_t, typename = impl::requireInputIter_t<inputIter_t>>
+			vector(inputIter_t first, inputIter_t last) : storage{}
+				{  _rangeInitialise(first, last, impl::iterator_category(first)); }
+
+		vector &operator =(const vector &other);
+
+		vector &operator =(vector &&other) noexcept
+		{
+			_moveAssign(std::move(other));
+			return *this;
+		}
+
+		vector &operator =(initializer_list<T> list)
+		{
+			_assignAux(list.begin(), list.end(), random_access_iterator_tag{});
+			return *this;
+		}
+
+		void assign(const size_t count, const T &value) { _fillAssign(count, value); }
+		template<typename inputIter_t, typename = impl::requireInputIter_t<inputIter_t>>
+			void assign(inputIter_t first, inputIter_t last) { _assignDispatch(first, last, false_type{}); }
+		void assign(initializer_list<T> list) { _assignAux(list.begin(), list.end(), random_access_iterator_tag{}); }
+
+		iterator begin() noexcept { return iterator{storage.begin}; }
+		const_iterator begin() const noexcept { return const_iterator{storage.begin}; }
+		iterator end() noexcept { return iterator{storage.end}; }
+		const_iterator end() const noexcept { return const_iterator{storage.end}; }
+		reverse_iterator rbegin() noexcept { return reverse_iterator{end()}; }
+		const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator{end()}; }
+		reverse_iterator rend() noexcept { return reverse_iterator{begin()}; }
+		const_reverse_iterator rend() const noexcept { return const_reverse_iterator{begin()}; }
+		const_iterator cbegin() const noexcept { return const_iterator{storage.begin}; }
+		const_iterator cend() const noexcept { return const_iterator{storage.end}; }
+		const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator{end()}; }
+		const_reverse_iterator crend() const noexcept { return const_reverse_iterator{begin()}; }
+		size_t size() const noexcept { return size_t(storage.end - storage.begin); }
+
+		void resize(const size_t newSize)
+		{
+			if (newSize > size())
+				_defaultAppend(newSize - size());
+			else if (newSize < size())
+				_eraseAtEnd(storage.begin + newSize);
+		}
+
+		void resize(const size_t newSize, const T &value)
+		{
+			if (newSize > size())
+				_fillInsert(end(), newSize - size(), value);
+			else if (newSize < size())
+				_eraseAtEnd(storage.begin + newSize);
+		}
+
+		void resize(const size_t newSize, T value = T{})
+		{
+			if (newSize > size())
+				_fillInsert(end(), newSize - size(), value);
+			else if (newSize < size())
+				_eraseAtEnd(storage.begin + newSize);
+		}
+
+		void shrink_to_fit() { }
+		size_t capacity() const noexcept { return size_t(storage.storageEnd - storage.begin); }
+		[[nodiscard]] bool empty() const noexcept { return begin() == end(); }
+
+		void reserve(const size_t count);
+
+		reference operator [](const size_t idx) noexcept
+			{ return storage.begin[idx]; }
+		const_reference operator [](const size_t idx) const noexcept
+			{ return storage.begin[idx]; }
+
+		//reference at(const size_t idx)
+		//const_reference at(const size_t idx) const
+
+		reference front() noexcept { return *begin(); }
+		const_reference front() const noexcept { return *begin(); }
+		reference back() noexcept { return *(end() - 1); }
+		const_reference back() const noexcept { return *(end() - 1); }
+		T *data() noexcept { return _dataPtr(storage.begin); }
+		const T *data() const noexcept { return _dataPtr(storage.begin); }
+
+		void push_back(const T &value)
+		{
+			if (storage.end != storage.storageEnd)
+			{
+				*storage.end = value;
+				++storage.end;
+			}
+			else
+				_reallocInsert(end(), value);
+		}
+
+		void push_back(T &&value) { emplace_back(std::move(value)); }
+
+		template<typename... args_t> reference emplace_back(args_t &&...args);
+
+		void pop_back() noexcept
+		{
+			--storage.end;
+			//destroy(storage.end);
+		}
+
+		template<typename... args_t> iterator empalce(const_iterator position, args_t &&...args)
+			{ return _emplaceAux(position, std::forward<args_t>(args)...); }
+
+		iterator insert(const_iterator position, const T &value);
+		iterator insert(const_iterator position, T &&value) { return _insertRval(position, std::move(value)); }
+
+		iterator insert(const_iterator position, initializer_list<T> list)
+		{
+			const auto offset{position - cbegin()};
+			_rangeInsert(begin() + offset, list.begin(), list.end(), random_access_iterator_tag{});
+			return begin() + offset;
+		}
+
+		iterator insert(const_iterator position, const size_t count, const T &value)
+		{
+			const auto offset{position - cbegin()};
+			_fillInsert(begin() + offset, count, value);
+			return begin() + offset;
+		}
+
+		template<typename inputIter_t, typename = impl::requireInputIter_t<inputIter_t>>
+			iterator insert(const_iterator position, inputIter_t first, inputIter_t last)
+		{
+			const auto offset{position - cbegin()};
+			_insertDispatch(begin() + offset, first, last, false_type{});
+			return begin() + offset;
+		}
+
+		iterator erase(const_iterator position) { return _erase(begin() + (position - cbegin())); }
+
+		iterator erase(const_iterator first, const_iterator last)
+		{
+			const auto _begin{begin()};
+			const auto _cbegin{cbegin()};
+			return _erase(_begin + (first - _cbegin), _begin + (last - _cbegin));
+		}
+
+		void swap(vector &other) noexcept { storage._swapData(other.storage); }
+		void clear() noexcept { _eraseAtEnd(storage.begin); }
+
+	private:
+		template<typename iterator_t>
+			void _rangeInitialise(iterator_t first, const iterator_t last, std::input_iterator_tag) try
+		{
+			for (; first != last; ++first)
+				emplace_back(*first);
+		}
+		catch (...)
+		{
+			clear();
+			throw;
+		}
+
+		template<typename iterator_t>
+			void _rangeInitialise(iterator_t first, const iterator_t last, std::forward_iterator_tag)
+		{
+			const auto n{std::distance(first, last)};
+			storage.begin = storage.allocate(n);
+			storage.storageEnd = storage.begin + n;
+			storage.end = std::copy(first, last, storage.begin);
+		}
+
+		void _fillInitialise(const size_t count, const T &value)
+		{
+			for (size_t i{}; i < count; ++i)
+				storage.begin[i] = value;
+			storage.end = storage.begin + count;
+		}
+
+		void _defaultInitialise(const size_t count) { _fillInitialise(count, T{}); }
+
+		template<typename int_t> void _assignDispatch(int_t count, int_t value, true_type)
+			{ _fillAssign(count, value); }
+		template<typename iter_t> void _assignDispatch(iter_t first, iter_t last, false_type)
+			{ _assignAux(first, last, impl::iterator_category(first)); }
+
+		template<typename inputIter_t> void _assignAux(inputIter_t first, inputIter_t last,
+			std::input_iterator_tag);
+		template<typename forwardIter_t> void _assignAux(forwardIter_t first, forwardIter_t last,
+			std::forward_iterator_tag);
+
+		void _fillAssign(const size_t count, const T &value);
+
+		void _moveAssign(vector &&other) noexcept
+		{
+			vector tmp{};
+			storage._swapData(other.storage);
+			tmp.storage._swapData(other.storage);
+		}
+
+		template<typename int_t> void _insertDispatch(iterator position, int_t count, int_t value, true_type)
+			{ _fillInsert(position, count, value); }
+		template<typename iter_t> void _insertDispatch(iterator position, iter_t first, iter_t last, false_type)
+			{ _rangeInsert(position, first, last, impl::iterator_category(first)); }
+		template<typename iter_t> void _rangeInsert(iterator position, iter_t first, iter_t last, input_iterator_tag);
+		template<typename iter_t> void _rangeInsert(iterator position, iter_t first, iter_t last, forward_iterator_tag);
+
+		void _fillInsert(iterator position, const size_t count, const T &value);
+
+		void _eraseAtEnd(pointer position) noexcept
+		{
+			if (storage.end - position)
+			{
+				// destroy the elements from position to storage.end
+				storage.end = position;
+			}
+		}
+
+		iterator _erase(iterator position);
+		iterator _erase(iterator first, iterator last);
+
+		template<typename U> U *_dataPtr(U *ptr) const noexcept { return ptr; }
+		template<typename ptr_t> typename std::pointer_traits<ptr_t>::element_type *
+			_dataptr(ptr_t ptr) const { return empty() ? nullptr : impl::to_address(ptr); }
+
+		static size_t _maxSize() noexcept
+		{
+			const size_t diffMax = std::numeric_limits<ptrdiff_t>::max() / sizeof(T);
+			const size_t sizeMax = std::numeric_limits<size_t>::max() / sizeof(T);
+			return std::min(diffMax, sizeMax);
+		}
+	};
+
+	template<typename iter_t, typename T = typename iterator_traits<iter_t>::value_type,
+		typename = impl::requireInputIter_t<iter_t>> vector(iter_t, iter_t) -> vector<T>;
 } // namespace std
 
 #endif /*VECTOR*/
