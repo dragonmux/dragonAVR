@@ -88,7 +88,7 @@ namespace std
 		return static_cast<common_type_t<ptrdiff_t, type>>(cont.size());
 	}
 
-	template<typename T, ptrdiff_t N> constexpr ptrdiff_t ssize(const T (&)[N]) noexcept { return N; }
+	template<typename T, size_t N> constexpr ptrdiff_t ssize(const T (&)[N]) noexcept { return ptrdiff_t(N); }
 } // namespace std
 
 #endif /*BITS_RANGE_ACCESS_HXX*/
