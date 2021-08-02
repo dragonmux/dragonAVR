@@ -37,7 +37,11 @@ namespace std
 	using ::uint_least64_t;
 
 	using ::uintmax_t;
+#if __AVR_XMEGA__
+	using uintptr_t = ::uint32_t;
+#else
 	using ::uintptr_t;
+#endif
 } // namespace std
 
 #endif /*CSTDINT*/
