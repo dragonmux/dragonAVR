@@ -9,9 +9,36 @@
 
 namespace std
 {
+	namespace impl
+	{
+		template<typename T, std::size_t N> struct arrayTraits_t
+		{
+			using type_t = T[N];
+			constexpr static bool is_swappable = std::is_swappable_v<T>;
+			constexpr static bool is_nothrow_swappable = std::is_nothrow_swappable_v<T>;
+
+			constexpr static T &ref(type_t &elems, const std::size_t n) noexcept
+				{ return elems[n]; }
+			constexpr static const T &ref(const type_t &elems, const std::size_t n) noexcept
+				{ return elems[n]; }
+			constexpr static T *ptr(type_t &elems) noexcept { return elems; }
+			constexpr static const T *ptr(const type_t &elems) noexcept { return elems; }
+		};
+
+		template<typename T> struct arrayTraits_t<T, 0>
+		{
+			struct type_t { };
+			constexpr static bool is_swappable = true;
+			constexpr static bool is_nothrow_swappable = true;
+
+			constexpr static T &ref(const type_t &, const std::size_t) noexcept
+				{ return *static_cast<T *>(nullptr); }
+			constexpr static T *ptr(const type_t &) noexcept { return nullptr; }
+		};
+	} // namespace impl
+
 	template<typename T, std::size_t N> struct array final
 	{
-	public:
 		using value_type = T;
 		using size_type = std::size_t;
 		using difference_type = std::ptrdiff_t;
@@ -21,12 +48,16 @@ namespace std
 		using const_pointer = const T *;
 		using iterator = T *;
 		using const_iterator = const T *;
+		using reverse_iterator = std::reverse_iterator<iterator>;
+		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+		using traits = impl::arrayTraits_t<T, N>;
 
 		constexpr reference operator [](size_type pos) noexcept { return at(pos); }
 		constexpr const_reference operator [](size_type pos) const noexcept { return at(pos); }
 
-		constexpr pointer data() noexcept { return elems; }
-		constexpr const_pointer data() const noexcept { return elems; }
+		constexpr pointer data() noexcept { return traits::ptr(elems); }
+		constexpr const_pointer data() const noexcept { return traits::ptr(elems); }
 		constexpr auto size() const noexcept { return N; }
 		constexpr auto max_size() const noexcept { return N; }
 		constexpr auto empty() const noexcept { return size() == 0; }
@@ -35,19 +66,25 @@ namespace std
 		constexpr const_iterator begin() const noexcept { return {data()}; }
 		constexpr iterator end() noexcept { return {data() + N}; }
 		constexpr const_iterator end() const noexcept { return {data() + N}; }
+		constexpr reverse_iterator rbegin() noexcept { return reverse_iterator{end()}; }
+		constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator{end()}; }
+		constexpr reverse_iterator rend() noexcept { return reverse_iterator{begin()}; }
+		constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator{begin()}; }
 		constexpr const_iterator cbegin() const noexcept { return {data()}; }
 		constexpr const_iterator cend() const noexcept { return {data() + N}; }
+		constexpr const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator{end()}; }
+		constexpr const_reverse_iterator crend() const noexcept { return const_reverse_iterator{begin()}; }
 
-		constexpr reference at(size_type pos) noexcept
+		constexpr reference at(const size_type pos) noexcept
 		{
 			//static_assert(pos < size());
-			return elems[pos];
+			return traits::ref(elems, pos);
 		}
 
-		constexpr const_reference at(size_type pos) const noexcept
+		constexpr const_reference at(const size_type pos) const noexcept
 		{
 			//static_assert(pos < size());
-			return elems[pos];
+			return traits::ref(elems, pos);
 		}
 
 		constexpr reference front() noexcept { return *begin(); }
@@ -56,10 +93,10 @@ namespace std
 		constexpr const_reference back() const noexcept { return N ? *(end() - 1) : *end(); }
 
 		constexpr void fill(const value_type &value) { std::fill_n(begin(), size(), value); }
-		constexpr void swap(array &other) noexcept(std::is_nothrow_swappable_v<T>)
+		constexpr void swap(array &other) noexcept(traits::is_nothrow_swappable)
 			{ std::swap_ranges(begin() ,end(), other.begin()); }
 
-		T elems[N];
+		typename traits::type_t elems;
 	};
 
 	template<typename T, typename... Us> array(T, Us...) ->
